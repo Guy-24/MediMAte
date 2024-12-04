@@ -38,4 +38,22 @@ List<Alarm> data = [
     dosageL: 5,
     info: "EAT IT NOW",
   ),
+  Alarm(
+    slot: 3,
+    alarmTime: TimeOfDay(hour: 22, minute: 30),
+    alarmTotal: 3,
+    name: "Aspirin",
+    dosagePT: 1,
+    dosageL: 5,
+    info: "EAT IT NOW",
+  ),
+  Alarm(
+    slot: 4,
+    alarmTime: TimeOfDay(hour: 22, minute: 30),
+    alarmTotal: 3,
+    name: "Aspirin",
+    dosagePT: 30,
+    dosageL: 5,
+    info: "EAT IT NOW",
+  ),
 ];

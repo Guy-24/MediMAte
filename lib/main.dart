@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
         ),
 
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF121318), 
+          backgroundColor: Color(0xFF121318),
         ),
 
         inputDecorationTheme: const InputDecorationTheme(
@@ -37,8 +37,7 @@ class MyApp extends StatelessWidget {
             borderSide: BorderSide(color: Color(0xFF191c23)),
           ),
           focusedBorder: UnderlineInputBorder(
-            borderSide:
-                BorderSide(color: Colors.black, width: 2.0),
+            borderSide: BorderSide(color: Colors.black, width: 2.0),
           ),
           labelStyle: TextStyle(color: Colors.black),
         ),

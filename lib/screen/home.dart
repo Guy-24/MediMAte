@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:medimate/model/data.dart';
 import 'package:medimate/screen/form.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -13,11 +17,119 @@ class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
   List<bool> isVibrate = [];
 
+  // Add these variables
+  List<File?> _images = [];
+  final picker = ImagePicker();
+  List<bool> _isUploadingList = [];
+  List<String?> _messageList = [];
+  List<Map<String, dynamic>?> _jsonResponseList = [];
+
   @override
   void initState() {
     super.initState();
     isExpanded = List<bool>.filled(data.length, false);
     isVibrate = List<bool>.filled(data.length, false);
+
+    // Initialize the new lists
+    _images = List<File?>.filled(data.length, null);
+    _isUploadingList = List<bool>.filled(data.length, false);
+    _messageList = List<String?>.filled(data.length, null);
+    _jsonResponseList = List<Map<String, dynamic>?>.filled(data.length, null);
+  }
+
+  Future<void> _pickImage(int index) async {
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 600,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _images[index] = File(pickedFile.path);
+          _messageList[index] = null;
+        });
+      } else {
+        setState(() {
+          _messageList[index] = 'No image selected.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messageList[index] = 'Error selecting image: $e';
+      });
+    }
+  }
+
+  Future<void> _uploadImage(int index) async {
+    if (_images[index] == null) return;
+
+    setState(() {
+      _isUploadingList[index] = true;
+      _messageList[index] = null;
+    });
+
+    const String uploadUrl = 'http://10.0.2.2:8000/process-image/';
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(uploadUrl))
+        ..files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            _images[index]!.path,
+          ),
+        );
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        setState(() {
+          _messageList[index] = 'Upload successful';
+          _jsonResponseList[index] = jsonDecode(responseData);
+
+          // Map the API response to the Alarm object
+          Map<String, dynamic>? apiData = _jsonResponseList[index];
+
+          if (apiData != null) {
+            // Update name
+            data[index].name = apiData['pill_name'] ?? data[index].name;
+
+            // Update dosagePT
+            data[index].dosagePT = int.tryParse(apiData['amount'].toString()) ??
+                data[index].dosagePT;
+
+            // Concatenate datae, time_condition, and warning into info
+            data[index].info =
+                '${apiData['datae'] ?? ''}, ${apiData['time_condition'] ?? ''}, ${apiData['warning'] ?? ''}';
+
+            // Update alarmTime
+            if (apiData['time'] != -1) {
+              int hour = int.tryParse(apiData['time'].toString()) ??
+                  data[index].alarmTime.hour;
+              data[index].alarmTime = TimeOfDay(hour: hour, minute: 0);
+            }
+            _messageList[index] = 'Invalid response data from API';
+          }
+        });
+        print(_jsonResponseList[index]);
+        print(index);
+      } else {
+        setState(() {
+          _messageList[index] =
+              'Upload failed with status: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messageList[index] = 'An error occurred: $e';
+      });
+    } finally {
+      setState(() {
+        _isUploadingList[index] = false;
+      });
+    }
   }
 
   @override
@@ -458,16 +570,16 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
                               if (isExpanded[index])
-                                //Take picture
+                                // Take picture
                                 Positioned(
                                   top: 360,
                                   left: 5,
-                                  //btn
                                   child: ElevatedButton(
-                                    onPressed: () {
-                                      print(
-                                          "Take picture clicked!!!!!!!!!!!!!!!!");
+                                    onPressed: () async {
+                                      await _pickImage(index);
+                                      await _uploadImage(index);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -476,7 +588,6 @@ class _HomeState extends State<Home> {
                                       ),
                                       padding: EdgeInsets.zero,
                                     ),
-                                    //Card
                                     child: Container(
                                       constraints: const BoxConstraints(
                                           maxWidth: 182, maxHeight: 50),
@@ -491,19 +602,17 @@ class _HomeState extends State<Home> {
                                         borderRadius: const BorderRadius.all(
                                             Radius.circular(10.0)),
                                       ),
-                                      //Take picture img & text
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Image.network(
-                                              "https://cdn-icons-png.flaticon.com/128/711/711191.png",
-                                              color: Colors.white),
-                                          SizedBox(
-                                            width: 10,
+                                            "https://cdn-icons-png.flaticon.com/128/711/711191.png",
+                                            color: Colors.white,
                                           ),
+                                          SizedBox(width: 10),
                                           Text(
-                                            "Take picture",
+                                            "Gallary",
                                             textAlign: TextAlign.start,
                                             style: TextStyle(
                                                 fontSize: 20,
@@ -514,6 +623,16 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
+                              // // Optionally display messages or loading indicators
+                              // if (_isUploadingList[index])
+                              //   CircularProgressIndicator(),
+                              // if (_messageList[index] != null)
+                              //   Text(
+                              //     _messageList[index]!,
+                              //     style: TextStyle(color: Colors.yellow),
+                              //   ),
+
                               if (isExpanded[index])
                                 //Vibrate
                                 Positioned(
@@ -582,6 +701,7 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
                               if (isExpanded[index])
                                 //Delete
                                 Positioned(
