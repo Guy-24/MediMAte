@@ -147,8 +147,8 @@ class _AddFormState extends State<AddForm> {
                     const SizedBox(
                       height: 20,
                     ),
+                    // ปุ่ม submit-------------------------------
                     FilledButton(
-                        // ปุ่ม submit
                         onPressed: () {
                           _formKey.currentState!.validate();
                           //นำ state ที่อยู่ในฟอร์มมาตรวจสอบผ่านตัว _formKey ผ่านตัว state
@@ -160,7 +160,6 @@ class _AddFormState extends State<AddForm> {
                               dosageL: _dosageL,
                               info: _info,
                               slot: _slot,
-                              alarmTotal: _alarmTotal,
                               alarmTime: _alarmTime,
                             ),
                           ); //สร้าง object Person และผูก state กับ propoties
