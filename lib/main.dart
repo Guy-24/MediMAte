@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:medimate/screen/form.dart';
 import 'package:medimate/screen/home.dart';
 import 'package:medimate/model/data.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeAlarms(); // Initialize alarms
+  await initializeAlarms();
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('app_icon');
+
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   runApp(MyApp());
 }
 
@@ -29,11 +41,9 @@ class MyApp extends StatelessWidget {
           onError: Colors.white,
           inversePrimary: Colors.blueGrey,
         ),
-
         appBarTheme: const AppBarTheme(
           backgroundColor: Color(0xFF121318),
         ),
-
         inputDecorationTheme: const InputDecorationTheme(
           enabledBorder: UnderlineInputBorder(
             borderSide: BorderSide(color: Color(0xFF191c23)),
@@ -43,7 +53,6 @@ class MyApp extends StatelessWidget {
           ),
           labelStyle: TextStyle(color: Colors.black),
         ),
-
         useMaterial3: true,
       ),
       home: Scaffold(

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:medimate/main.dart';
 import 'package:medimate/model/data.dart';
 import 'package:medimate/screen/form.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 // import 'package:medimate/services/api.dart';
 class Home extends StatefulWidget {
@@ -55,6 +59,37 @@ class _HomeState extends State<Home> {
     print("init called!!!");
   }
 
+  Future<void> scheduleAlarm(int index) async {
+    tz.initializeTimeZones();
+    final localTimeZone = tz.getLocation('Asia/Bangkok');
+
+    final scheduledTime = tz.TZDateTime.now(localTimeZone).add(Duration(
+      hours: alarms[index].hour,
+      minutes: alarms[index].min,
+    ));
+    print(
+        'Alarm scheduled for: $scheduledTime ----------------------------------------------------------');
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      index, // Unique ID for the alarm
+      'Alarm', // Notification title
+      'Your alarm for ${alarms[index].name} is ringing!', // Notification body
+      scheduledTime, // When to show the notification
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'alarm_channel', // Channel ID
+          'Alarm Notifications', // Channel name
+          channelDescription: 'Channel for Alarm notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+      ),
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
   Future<void> fetchData() async {
     await initializeAlarms(); // โหลดข้อมูลจาก API
     _initializeState(); // อัปเดตสถานะของ Widget
@@ -103,7 +138,6 @@ class _HomeState extends State<Home> {
 
   Future<void> _uploadImage(int index) async {
     if (_images[index] == null) return;
-    print("upload img----------------------------------------------");
     setState(() {
       _isUploadingList[index] = true;
       _messageList[index] = null;
@@ -123,7 +157,6 @@ class _HomeState extends State<Home> {
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        print("Code 200----------------------------------------------");
         var responseData = await response.stream.bytesToString();
         setState(() {
           _messageList[index] = 'Upload successful';
@@ -166,7 +199,6 @@ class _HomeState extends State<Home> {
           "hour": alarms[index].hour,
           "min": alarms[index].min,
         };
-        print("await---------------------------------------------");
 
         await updateAlarm(alarms[index].slot, alarmData);
         fetchData();
@@ -351,6 +383,9 @@ class _HomeState extends State<Home> {
                                                               pickedTime.minute;
                                                         },
                                                       );
+                                                      // Schedule the alarm after setting the time
+                                                      await scheduleAlarm(
+                                                          index);
                                                       Navigator.of(context)
                                                           .pop();
                                                       _updateAlarm(index);
@@ -683,9 +718,8 @@ class _HomeState extends State<Home> {
                                   left: 5,
                                   //btn
                                   child: ElevatedButton(
-                                    onPressed: () {
-                                      print(
-                                          "Manual receive clicked!!!!!!!!!!!!!!!!");
+                                    onPressed: () async {
+                                      _confirmManual(alarms[index].slot);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -929,6 +963,45 @@ class _HomeState extends State<Home> {
         });
   }
 
+  void _confirmManual(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Manual'),
+          content: Text('Are you sure you want to take pill(s) now?'),
+          actions: [
+            TextButton(
+              child: Text(
+                'Confirm',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () async {
+                final alarmData = {
+                  "manual": true,
+                };
+                await updateAlarm(alarms[index].slot - 1, alarmData);
+                print(
+                    "${alarms[index].slot - 1}  manual=>true------------------------------");
+                fetchData();
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _confirmResetAlarm(int index) {
     showDialog(
       context: context,
@@ -952,7 +1025,7 @@ class _HomeState extends State<Home> {
                 style: TextStyle(color: Colors.red),
               ),
               onPressed: () async {
-                _resetAlarm(index);
+                _resetAlarm(alarms[index].slot);
                 Navigator.of(context).pop();
               },
             ),
@@ -968,7 +1041,7 @@ class _HomeState extends State<Home> {
       "min": alarms[index].min,
     };
 
-    await updateAlarm(alarms[index].slot, alarmData);
+    await updateAlarm(alarms[index].slot - 1, alarmData);
     fetchData();
   }
 
@@ -982,7 +1055,8 @@ class _HomeState extends State<Home> {
       "min": 0,
     };
 
-    await updateAlarm(alarms[index - 1].slot, alarmData);
+    print("${index - 1} resetAlarm------------------------------");
+    await updateAlarm(index - 1, alarmData);
     fetchData();
   }
 }
