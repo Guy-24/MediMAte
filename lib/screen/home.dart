@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
 
+// import 'package:medimate/services/api.dart';
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -16,11 +17,6 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
   List<bool> isVibrate = [];
-  String formatTime(int hour, int minute) {
-    return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
-  }
-
-  // Add these variables
   List<File?> _images = [];
   final picker = ImagePicker();
   List<bool> _isUploadingList = [];
@@ -30,14 +26,23 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    isExpanded = List<bool>.filled(alarms.length, false);
-    isVibrate = List<bool>.filled(alarms.length, false);
+    _initializeState();
+  }
 
-    // Initialize the new lists
-    _images = List<File?>.filled(alarms.length, null);
-    _isUploadingList = List<bool>.filled(alarms.length, false);
-    _messageList = List<String?>.filled(alarms.length, null);
-    _jsonResponseList = List<Map<String, dynamic>?>.filled(alarms.length, null);
+  void _initializeState() {
+    setState(() {
+      isExpanded = List<bool>.filled(alarms.length, false);
+      isVibrate = List<bool>.filled(alarms.length, false);
+      _images = List<File?>.filled(alarms.length, null);
+      _isUploadingList = List<bool>.filled(alarms.length, false);
+      _messageList = List<String?>.filled(alarms.length, null);
+      _jsonResponseList =
+          List<Map<String, dynamic>?>.filled(alarms.length, null);
+    });
+  }
+
+  String formatTime(int hour, int minute) {
+    return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
   }
 
   Future<void> _pickImage(int index) async {

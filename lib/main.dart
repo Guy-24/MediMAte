@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:medimate/screen/form.dart';
 import 'package:medimate/screen/home.dart';
+import 'package:medimate/model/data.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeAlarms(); // Initialize alarms
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {

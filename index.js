@@ -1,42 +1,175 @@
 const express = require("express");
-
+const mongoose = require("mongoose");
+const cors = require("cors");
 const app = express();
 
+const database = "Alarm";
+// const collection = 'NEW_COLLECTION_NAME';
+
+// The current database to use.
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
-app.use(express.urlencoded({
-    express: true
-}));
+// MongoDB Connection
+mongoose.connect(
+  "mongodb+srv://admin:1234@cluster0.lxkwl.mongodb.net/AlarmDB?retryWrites=true&w=majority&appName=Cluster0",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
 
-const productData = [];
+const db = mongoose.connection;
 
-app.listen(2000, ()=>{
-    console.log("Connect to server at 2000");
-})
+db.on("error", console.error.bind(console, "Connection error:"));
+db.once("open", () => {
+  console.log("Connected to MongoDB");
+});
 
-//post api
+// Alarm Schema
+const AlarmSchema = new mongoose.Schema({
+  slot: { type: Number, required: true },
+  hour: { type: Number, required: true },
+  min: { type: Number, required: true },
+  name: { type: String, required: true },
+  dosagePT: { type: Number, required: false },
+  dosageL: { type: Number, required: false },
+  info: { type: String, required: false },
+});
 
-app.post("/api/add_product",(req,res)=> {
+const Alarm = mongoose.model("Alarm", AlarmSchema);
 
-    console.log("Result", req.body);
+// Server Port
+const PORT = process.env.PORT || 2000;
 
-    const data = {
-        "slot": req.body.slot,
-        "hour": req.body.hour,
-        "min": req.body.min,
-        "name": req.body.name,
-        "dosagePT": req.body.dosagePT,
-        "dosageL": req.body.dosageL,
-        "info": req.body.info,
-    };
+// Start Server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-    productData.push(data);
-    console.log("Final", data);
+///// API ENDPOINTS /////
 
-    res.status(200).send
-({
-    "status_code": 200,
-    "message": "Done",
-    "data":data
-})
-})
+// POST: Add a new alarm
+app.post("/api/add_alarm", async (req, res) => {
+  try {
+    const alarm = new Alarm(req.body); // Create a new alarm document
+    const savedAlarm = await alarm.save(); // Save to MongoDB
+    res.status(201).send({
+      status_code: 201,
+      message: "Alarm added successfully",
+      data: savedAlarm,
+    });
+  } catch (error) {
+    res.status(500).send({
+      status_code: 500,
+      message: "Error adding alarm",
+      data: error.message,
+    });
+  }
+});
+
+// GET: Fetch all alarms
+app.get("/api/get_all_alarms", async (req, res) => {
+  try {
+    const alarms = await Alarm.find(); // Fetch all documents from the Alarm collection
+    res.status(200).send({
+      status_code: 200,
+      message: "Alarms retrieved successfully",
+      data: alarms,
+    });
+  } catch (error) {
+    res.status(500).send({
+      status_code: 500,
+      message: "Error fetching alarms",
+      data: error.message,
+    });
+  }
+});
+
+// GET: Fetch a specific alarm by ID
+app.get("/api/get_alarm/:id", async (req, res) => {
+  try {
+    const alarm = await Alarm.findById(req.params.id); // Fetch a specific alarm by its ID
+    if (!alarm) {
+      return res.status(404).send({
+        status_code: 404,
+        message: "Alarm not found",
+      });
+    }
+    res.status(200).send({
+      status_code: 200,
+      message: "Alarm retrieved successfully",
+      data: alarm,
+    });
+  } catch (error) {
+    res.status(500).send({
+      status_code: 500,
+      message: "Error fetching alarm",
+      data: error.message,
+    });
+  }
+});
+
+// // PUT: Update an alarm by ID
+// app.put("/api/update_alarm/:id", async (req, res) => {
+//   try {
+//     const updatedAlarm = await Alarm.findByIdAndUpdate(
+//       req.params.id,
+//       req.body,
+//       {
+//         new: true, // Return the updated document
+//         runValidators: true, // Run schema validation on updates
+//       }
+//     );
+//     if (!updatedAlarm) {
+//       return res.status(404).send({
+//         status_code: 404,
+//         message: "Alarm not found",
+//       });
+//     }
+//     res.status(200).send({
+//       status_code: 200,
+//       message: "Alarm updated successfully",
+//       data: updatedAlarm,
+//     });
+//   } catch (error) {
+//     res.status(500).send({
+//       status_code: 500,
+//       message: "Error updating alarm",
+//       data: error.message,
+//     });
+//   }
+
+// PUT: Update an alarm by slot
+app.put("/api/update_alarm/:slot", async (req, res) => {
+  try {
+    const updatedAlarm = await Alarm.findOneAndUpdate(
+      { slot: req.params.slot },
+      req.body,
+      {
+        new: true, // Return the updated document
+        runValidators: true, // Run schema validation on updates
+      }
+    );
+    if (!updatedAlarm) {
+      return res.status(404).send({
+        status_code: 404,
+        message: "Alarm not found",
+      });
+    }
+    res.status(200).send({
+      status_code: 200,
+      message: "Alarm updated successfully",
+      data: updatedAlarm,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({
+      status_code: 500,
+      message: "Error updating alarm",
+      data: error.message,
+    });
+  }
+});
