@@ -409,11 +409,16 @@ class _HomeState extends State<Home> {
                                 child: isExpanded[index]
                                     ? GestureDetector(
                                         onTap: () {
+                                          int slot = alarms[index].slot;
+                                          int hour = alarms[index].hour;
+                                          int min = alarms[index].min;
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (ctx) =>
-                                                      const AddForm()));
+                                                  builder: (ctx) => AddForm(
+                                                      slot: slot,
+                                                      hour: hour,
+                                                      min: min)));
                                         },
                                         child: Row(
                                             mainAxisAlignment:
@@ -455,11 +460,16 @@ class _HomeState extends State<Home> {
                                     right: 25,
                                     child: GestureDetector(
                                       onTap: () {
+                                        int slot = alarms[index].slot;
+                                        int hour = alarms[index].hour;
+                                        int min = alarms[index].min;
                                         Navigator.push(
                                             context,
                                             MaterialPageRoute(
-                                                builder: (ctx) =>
-                                                    const AddForm()));
+                                                builder: (ctx) => AddForm(
+                                                    slot: slot,
+                                                    hour: hour,
+                                                    min: min)));
                                       },
                                       child: Text(
                                         "${alarms[index].dosagePT}",
@@ -494,11 +504,16 @@ class _HomeState extends State<Home> {
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
+                                      int slot = alarms[index].slot;
+                                      int hour = alarms[index].hour;
+                                      int min = alarms[index].min;
                                       Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                              builder: (ctx) =>
-                                                  const AddForm()));
+                                              builder: (ctx) => AddForm(
+                                                  slot: slot,
+                                                  hour: hour,
+                                                  min: min)));
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(

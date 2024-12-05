@@ -55,7 +55,11 @@ Future<List<Alarm>> fetchAlarmsFromApi() async {
       print(responseData);
       final List<dynamic> data = responseData['data'];
       if (data != null && data is List) {
-        return data.map((item) => Alarm.fromJson(item)).toList();
+        List<Alarm> alarmsList =
+            data.map((item) => Alarm.fromJson(item)).toList();
+        alarmsList.sort((a, b) => a.slot.compareTo(b.slot));
+        return alarmsList;
+        // return data.map((item) => Alarm.fromJson(item)).toList();
       } else {
         throw Exception('Invalid data format: "data" is not a list');
       }

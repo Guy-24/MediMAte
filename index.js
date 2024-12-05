@@ -145,8 +145,12 @@ app.get("/api/get_alarm/:id", async (req, res) => {
 // PUT: Update an alarm by slot
 app.put("/api/update_alarm/:slot", async (req, res) => {
   try {
+    // console.log("Slot parameter:", req.params.slot);
+    // console.log("Request parameter:", req.body);
+
     const updatedAlarm = await Alarm.findOneAndUpdate(
       { slot: req.params.slot },
+    //   console.log("Slot finding", req.params.slot),
       req.body,
       {
         new: true, // Return the updated document
