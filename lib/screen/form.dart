@@ -6,10 +6,21 @@ import 'package:http/http.dart' as http;
 
 class AddForm extends StatefulWidget {
   final int slot;
+  final String name;
+  final String info;
+  final int dosagePT;
+  final int dosageL;
   final int hour;
   final int min;
   const AddForm(
-      {Key? key, required this.slot, required this.hour, required this.min})
+      {Key? key,
+      required this.slot,
+      required this.name,
+      required this.info,
+      required this.dosagePT,
+      required this.dosageL,
+      required this.hour,
+      required this.min})
       : super(key: key);
 
   @override
@@ -42,18 +53,22 @@ Future<void> updateAlarm(int slot, Map<String, dynamic> alarmData) async {
 
 class _AddFormState extends State<AddForm> {
   final _formKey = GlobalKey<FormState>();
-  String _name = "";
-  int _dosagePT = 1;
-  int _dosageL = 1;
-  String _info = "";
-  late int _slot = 0;
-  late int _hour = 0;
-  late int _min = 0;
+  late String _name;
+  late int _dosagePT;
+  late int _dosageL;
+  late String _info;
+  late int _slot;
+  late int _hour;
+  late int _min;
 
   @override
   void initState() {
     super.initState();
     _slot = widget.slot;
+    _name = widget.name;
+    _dosagePT = widget.dosagePT;
+    _dosageL = widget.dosageL;
+    _info = widget.info;
     _hour = widget.hour;
     _min = widget.min;
   }
@@ -89,7 +104,8 @@ class _AddFormState extends State<AddForm> {
                 child: Column(
                   children: [
                     TextFormField(
-                      maxLength: 20,
+                      maxLength: 30,
+                      initialValue: _name,
                       decoration: const InputDecoration(
                         labelText: "Pill's Name",
                       ),
@@ -100,7 +116,8 @@ class _AddFormState extends State<AddForm> {
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
-                      maxLength: 40,
+                      maxLength: 100,
+                      initialValue: _info,
                       decoration: const InputDecoration(
                         labelText: "Pill's Details",
                       ),
@@ -111,6 +128,7 @@ class _AddFormState extends State<AddForm> {
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
+                      initialValue: _dosagePT.toString(),
                       keyboardType: TextInputType.number,
                       decoration:
                           const InputDecoration(labelText: "Dosage per Time"),
@@ -124,6 +142,7 @@ class _AddFormState extends State<AddForm> {
                     ),
                     const SizedBox(height: 20),
                     TextFormField(
+                      initialValue: _dosageL.toString(),
                       keyboardType: TextInputType.number,
                       decoration:
                           const InputDecoration(labelText: "Dosage Left"),

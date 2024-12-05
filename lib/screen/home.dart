@@ -14,6 +14,30 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
+Future<void> updateAlarm(int slot, Map<String, dynamic> alarmData) async {
+  final url = Uri.parse(
+      "http://10.0.2.2:2000/api/update_alarm/$slot"); // ใส่ URL ที่ถูกต้อง
+  try {
+    final response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json", // ระบุว่าใช้ JSON
+      },
+      body: jsonEncode(alarmData), // แปลงข้อมูลให้เป็น JSON
+    );
+
+    if (response.statusCode == 200) {
+      print("Alarm updated successfully");
+      print(jsonDecode(response.body)); // ดูข้อมูลที่ได้จาก API
+    } else {
+      print("Failed to update alarm: ${response.statusCode}");
+      print(response.body);
+    }
+  } catch (error) {
+    print("Error: $error");
+  }
+}
+
 class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
   List<bool> isVibrate = [];
@@ -26,7 +50,14 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _initializeState();
+    // _initializeState();
+    fetchData();
+    print("init called!!!");
+  }
+
+  Future<void> fetchData() async {
+    await initializeAlarms(); // โหลดข้อมูลจาก API
+    _initializeState(); // อัปเดตสถานะของ Widget
   }
 
   void _initializeState() {
@@ -72,7 +103,7 @@ class _HomeState extends State<Home> {
 
   Future<void> _uploadImage(int index) async {
     if (_images[index] == null) return;
-
+    print("upload img----------------------------------------------");
     setState(() {
       _isUploadingList[index] = true;
       _messageList[index] = null;
@@ -92,6 +123,7 @@ class _HomeState extends State<Home> {
       var response = await request.send();
 
       if (response.statusCode == 200) {
+        print("Code 200----------------------------------------------");
         var responseData = await response.stream.bytesToString();
         setState(() {
           _messageList[index] = 'Upload successful';
@@ -120,12 +152,27 @@ class _HomeState extends State<Home> {
               int min =
                   int.tryParse(apiData['time'].toString()) ?? alarms[index].min;
               // alarms[index] = TimeOfDay(hour: hour, minute: 0);
+
+              alarms[index].hour = hour;
+              alarms[index].min = min;
             }
             _messageList[index] = 'Invalid response data from API';
           }
         });
-        print(_jsonResponseList[index]);
-        print(index);
+        final alarmData = {
+          "name": alarms[index].name,
+          "dosagePT": alarms[index].dosagePT,
+          "info": alarms[index].info,
+          "hour": alarms[index].hour,
+          "min": alarms[index].min,
+        };
+        print("await---------------------------------------------");
+
+        await updateAlarm(alarms[index].slot, alarmData);
+        fetchData();
+
+        // print(_jsonResponseList[index]);
+        // print(index);
       } else {
         setState(() {
           _messageList[index] =
@@ -274,17 +321,39 @@ class _HomeState extends State<Home> {
                                                               .hour,
                                                           minute: alarms[index]
                                                               .min),
+                                                      builder:
+                                                          (BuildContext context,
+                                                              Widget? child) {
+                                                        return Theme(
+                                                          data:
+                                                              Theme.of(context)
+                                                                  .copyWith(
+                                                            textButtonTheme:
+                                                                TextButtonThemeData(
+                                                              style: TextButton
+                                                                  .styleFrom(
+                                                                foregroundColor:
+                                                                    Colors
+                                                                        .white, // Change Cancel/OK text color
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          child: child!,
+                                                        );
+                                                      },
                                                     );
                                                     if (pickedTime != null) {
-                                                      setState(() {
-                                                        // อัปเดตเวลาที่เลือกกลับไปยัง data[index].alarmTime
-                                                        alarms[index].hour =
-                                                            pickedTime.hour;
-                                                        alarms[index].min =
-                                                            pickedTime.minute;
-                                                      });
-                                                      print(
-                                                          "Selected time: ${pickedTime.format(context)}");
+                                                      setState(
+                                                        () {
+                                                          alarms[index].hour =
+                                                              pickedTime.hour;
+                                                          alarms[index].min =
+                                                              pickedTime.minute;
+                                                        },
+                                                      );
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      _updateAlarm(index);
                                                     }
                                                   },
                                                   style:
@@ -321,10 +390,10 @@ class _HomeState extends State<Home> {
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
-                                                        fontSize: 35,
+                                                        fontSize: 40,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        letterSpacing: 3,
+                                                        letterSpacing: 7,
                                                         color: Theme.of(context)
                                                             .colorScheme
                                                             .onSecondary,
@@ -409,6 +478,10 @@ class _HomeState extends State<Home> {
                                 child: isExpanded[index]
                                     ? GestureDetector(
                                         onTap: () {
+                                          String name = alarms[index].name;
+                                          int dosagePT = alarms[index].dosagePT;
+                                          int dosageL = alarms[index].dosageL;
+                                          String info = alarms[index].info;
                                           int slot = alarms[index].slot;
                                           int hour = alarms[index].hour;
                                           int min = alarms[index].min;
@@ -417,6 +490,10 @@ class _HomeState extends State<Home> {
                                               MaterialPageRoute(
                                                   builder: (ctx) => AddForm(
                                                       slot: slot,
+                                                      name: name,
+                                                      info: info,
+                                                      dosagePT: dosagePT,
+                                                      dosageL: dosageL,
                                                       hour: hour,
                                                       min: min)));
                                         },
@@ -424,15 +501,26 @@ class _HomeState extends State<Home> {
                                             mainAxisAlignment:
                                                 MainAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                alarms[index].name,
-                                                textAlign: TextAlign.left,
-                                                style: const TextStyle(
-                                                    fontSize: 25,
-                                                    fontWeight: FontWeight.bold,
-                                                    decoration:
-                                                        TextDecoration.none,
-                                                    color: Colors.white),
+                                              Container(
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        maxWidth: 150,
+                                                        maxHeight: 50),
+                                                child: Text(
+                                                  alarms[index].name,
+                                                  textAlign: TextAlign.left,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  softWrap: false,
+                                                  maxLines: 1,
+                                                  style: const TextStyle(
+                                                      fontSize: 25,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      decoration:
+                                                          TextDecoration.none,
+                                                      color: Colors.white),
+                                                ),
                                               ),
                                               SizedBox(
                                                 width: 10,
@@ -444,13 +532,20 @@ class _HomeState extends State<Home> {
                                                 height: 15,
                                               ),
                                             ]))
-                                    : Text(
-                                        alarms[index].name,
-                                        textAlign: TextAlign.left,
-                                        style: TextStyle(
-                                            fontSize: 25,
-                                            color: Colors.white,
-                                            decoration: TextDecoration.none),
+                                    : Container(
+                                        constraints: const BoxConstraints(
+                                            maxWidth: 300, maxHeight: 50),
+                                        child: Text(
+                                          alarms[index].name,
+                                          overflow: TextOverflow.ellipsis,
+                                          softWrap: false,
+                                          maxLines: 1,
+                                          textAlign: TextAlign.left,
+                                          style: TextStyle(
+                                              fontSize: 25,
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none),
+                                        ),
                                       ),
                               ),
                               //doasge per time
@@ -460,6 +555,10 @@ class _HomeState extends State<Home> {
                                     right: 25,
                                     child: GestureDetector(
                                       onTap: () {
+                                        String name = alarms[index].name;
+                                        int dosagePT = alarms[index].dosagePT;
+                                        int dosageL = alarms[index].dosageL;
+                                        String info = alarms[index].info;
                                         int slot = alarms[index].slot;
                                         int hour = alarms[index].hour;
                                         int min = alarms[index].min;
@@ -468,6 +567,10 @@ class _HomeState extends State<Home> {
                                             MaterialPageRoute(
                                                 builder: (ctx) => AddForm(
                                                     slot: slot,
+                                                    name: name,
+                                                    info: info,
+                                                    dosagePT: dosagePT,
+                                                    dosageL: dosageL,
                                                     hour: hour,
                                                     min: min)));
                                       },
@@ -504,6 +607,10 @@ class _HomeState extends State<Home> {
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
+                                      String name = alarms[index].name;
+                                      int dosagePT = alarms[index].dosagePT;
+                                      int dosageL = alarms[index].dosageL;
+                                      String info = alarms[index].info;
                                       int slot = alarms[index].slot;
                                       int hour = alarms[index].hour;
                                       int min = alarms[index].min;
@@ -512,6 +619,10 @@ class _HomeState extends State<Home> {
                                           MaterialPageRoute(
                                               builder: (ctx) => AddForm(
                                                   slot: slot,
+                                                  name: name,
+                                                  info: info,
+                                                  dosagePT: dosagePT,
+                                                  dosageL: dosageL,
                                                   hour: hour,
                                                   min: min)));
                                     },
@@ -543,7 +654,7 @@ class _HomeState extends State<Home> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Infomation",
+                                            "Info",
                                             textAlign: TextAlign.start,
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 4,
@@ -723,7 +834,7 @@ class _HomeState extends State<Home> {
                                               decoration: TextDecoration.none),
                                         ),
                                         SizedBox(
-                                          width: 152,
+                                          width: 130,
                                         ),
                                         //Vibrate btn
                                         GestureDetector(
@@ -755,15 +866,14 @@ class _HomeState extends State<Home> {
                                 ),
 
                               if (isExpanded[index])
-                                //Delete
+                                //Reset
                                 Positioned(
                                   top: 580,
                                   left: 5,
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      print(
-                                          "Reset btn clicked!!!!!!!!!!!!!!!!");
+                                      _confirmResetAlarm(alarms[index].slot);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -817,5 +927,62 @@ class _HomeState extends State<Home> {
             ],
           );
         });
+  }
+
+  void _confirmResetAlarm(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Reset'),
+          content: Text('Are you sure you want to reset this alarm?'),
+          actions: [
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Reset',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () async {
+                _resetAlarm(index);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateAlarm(int index) async {
+    final alarmData = {
+      "hour": alarms[index].hour,
+      "min": alarms[index].min,
+    };
+
+    await updateAlarm(alarms[index].slot, alarmData);
+    fetchData();
+  }
+
+  void _resetAlarm(int index) async {
+    final alarmData = {
+      "name": "-",
+      "dosagePT": 0,
+      "dosageL": 0,
+      "info": "-",
+      "hour": 0,
+      "min": 0,
+    };
+
+    await updateAlarm(alarms[index - 1].slot, alarmData);
+    fetchData();
   }
 }

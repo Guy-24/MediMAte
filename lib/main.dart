@@ -17,7 +17,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Medimate',
       theme: ThemeData(
-        //ธีม
         colorScheme: const ColorScheme(
           brightness: Brightness.dark,
           primary: Color(0xFF191c23),
