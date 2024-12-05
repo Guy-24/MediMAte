@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               "Alarm",
-              style: TextStyle(fontSize: 30),
+              style: TextStyle(fontSize: 30, color: Colors.white),
             ),
           ),
         ),

@@ -16,6 +16,9 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
   List<bool> isVibrate = [];
+  String formatTime(int hour, int minute) {
+    return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
+  }
 
   // Add these variables
   List<File?> _images = [];
@@ -27,14 +30,14 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    isExpanded = List<bool>.filled(data.length, false);
-    isVibrate = List<bool>.filled(data.length, false);
+    isExpanded = List<bool>.filled(alarms.length, false);
+    isVibrate = List<bool>.filled(alarms.length, false);
 
     // Initialize the new lists
-    _images = List<File?>.filled(data.length, null);
-    _isUploadingList = List<bool>.filled(data.length, false);
-    _messageList = List<String?>.filled(data.length, null);
-    _jsonResponseList = List<Map<String, dynamic>?>.filled(data.length, null);
+    _images = List<File?>.filled(alarms.length, null);
+    _isUploadingList = List<bool>.filled(alarms.length, false);
+    _messageList = List<String?>.filled(alarms.length, null);
+    _jsonResponseList = List<Map<String, dynamic>?>.filled(alarms.length, null);
   }
 
   Future<void> _pickImage(int index) async {
@@ -94,21 +97,24 @@ class _HomeState extends State<Home> {
 
           if (apiData != null) {
             // Update name
-            data[index].name = apiData['pill_name'] ?? data[index].name;
+            alarms[index].name = apiData['pill_name'] ?? alarms[index].name;
 
             // Update dosagePT
-            data[index].dosagePT = int.tryParse(apiData['amount'].toString()) ??
-                data[index].dosagePT;
+            alarms[index].dosagePT =
+                int.tryParse(apiData['amount'].toString()) ??
+                    alarms[index].dosagePT;
 
             // Concatenate datae, time_condition, and warning into info
-            data[index].info =
+            alarms[index].info =
                 '${apiData['datae'] ?? ''}, ${apiData['time_condition'] ?? ''}, ${apiData['warning'] ?? ''}';
 
             // Update alarmTime
             if (apiData['time'] != -1) {
               int hour = int.tryParse(apiData['time'].toString()) ??
-                  data[index].alarmTime.hour;
-              data[index].alarmTime = TimeOfDay(hour: hour, minute: 0);
+                  alarms[index].hour;
+              int min =
+                  int.tryParse(apiData['time'].toString()) ?? alarms[index].min;
+              // alarms[index] = TimeOfDay(hour: hour, minute: 0);
             }
             _messageList[index] = 'Invalid response data from API';
           }
@@ -135,7 +141,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-        itemCount: data.length,
+        itemCount: alarms.length,
         itemBuilder: (context, index) {
           return Column(
             children: [
@@ -215,7 +221,7 @@ class _HomeState extends State<Home> {
                                           //Card set time
                                           child: Container(
                                             width: 200,
-                                            height: 300,
+                                            height: 150,
                                             decoration: BoxDecoration(
                                                 color: Theme.of(context)
                                                     .colorScheme
@@ -234,7 +240,7 @@ class _HomeState extends State<Home> {
                                             child: Stack(children: [
                                               //Select time
                                               const Positioned(
-                                                top: 30,
+                                                top: 15,
                                                 left: 30,
                                                 width: 110,
                                                 height: 45,
@@ -248,7 +254,7 @@ class _HomeState extends State<Home> {
                                               ),
                                               //Time Picker
                                               Positioned(
-                                                top: 80,
+                                                top: 56,
                                                 left: 40,
                                                 width: 200,
                                                 height: 70,
@@ -258,14 +264,19 @@ class _HomeState extends State<Home> {
                                                     TimeOfDay? pickedTime =
                                                         await showTimePicker(
                                                       context: context,
-                                                      initialTime:
-                                                          data[index].alarmTime,
+                                                      initialTime: TimeOfDay(
+                                                          hour: alarms[index]
+                                                              .hour,
+                                                          minute: alarms[index]
+                                                              .min),
                                                     );
                                                     if (pickedTime != null) {
                                                       setState(() {
                                                         // อัปเดตเวลาที่เลือกกลับไปยัง data[index].alarmTime
-                                                        data[index].alarmTime =
-                                                            pickedTime;
+                                                        alarms[index].hour =
+                                                            pickedTime.hour;
+                                                        alarms[index].min =
+                                                            pickedTime.minute;
                                                       });
                                                       print(
                                                           "Selected time: ${pickedTime.format(context)}");
@@ -299,13 +310,13 @@ class _HomeState extends State<Home> {
                                                     ),
                                                     //Show Time
                                                     child: Text(
-                                                      data[index]
-                                                          .alarmTime
-                                                          .format(context),
+                                                      formatTime(
+                                                          alarms[index].hour,
+                                                          alarms[index].min),
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
-                                                        fontSize: 30,
+                                                        fontSize: 35,
                                                         fontWeight:
                                                             FontWeight.w700,
                                                         letterSpacing: 3,
@@ -339,10 +350,11 @@ class _HomeState extends State<Home> {
                                         Theme.of(context).colorScheme.primary,
                                     width: 200,
                                     child: Text(
-                                      data[index].alarmTime.format(context),
+                                      formatTime(alarms[index].hour,
+                                          alarms[index].min),
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        fontSize: 33,
+                                        fontSize: 40,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: 5,
                                         color: Colors.white,
@@ -361,20 +373,24 @@ class _HomeState extends State<Home> {
                                     ? GestureDetector(
                                         onTap: () {
                                           print(
-                                              "slot ${data[index].slot} btn Pressed!");
+                                              "slot ${alarms[index].slot} btn Pressed!");
                                         },
                                         child: Text(
-                                          "slot ${data[index].slot}",
+                                          "slot ${alarms[index].slot}",
                                           textAlign: TextAlign.right,
                                           style: TextStyle(
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none,
                                               fontSize:
-                                                  isExpanded[index] ? 25 : 20),
+                                                  isExpanded[index] ? 22 : 20),
                                         ),
                                       )
                                     : Text(
-                                        "slot ${data[index].slot}",
+                                        "slot ${alarms[index].slot}",
                                         textAlign: TextAlign.right,
                                         style: TextStyle(
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none,
                                             fontSize:
                                                 isExpanded[index] ? 25 : 20),
                                       ),
@@ -399,12 +415,14 @@ class _HomeState extends State<Home> {
                                                 MainAxisAlignment.start,
                                             children: [
                                               Text(
-                                                data[index].name,
+                                                alarms[index].name,
                                                 textAlign: TextAlign.left,
                                                 style: const TextStyle(
-                                                  fontSize: 25,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                    fontSize: 25,
+                                                    fontWeight: FontWeight.bold,
+                                                    decoration:
+                                                        TextDecoration.none,
+                                                    color: Colors.white),
                                               ),
                                               SizedBox(
                                                 width: 10,
@@ -417,9 +435,12 @@ class _HomeState extends State<Home> {
                                               ),
                                             ]))
                                     : Text(
-                                        data[index].name,
+                                        alarms[index].name,
                                         textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 25),
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none),
                                       ),
                               ),
                               //doasge per time
@@ -429,13 +450,19 @@ class _HomeState extends State<Home> {
                                     right: 25,
                                     child: GestureDetector(
                                       onTap: () {
-                                        print(
-                                            "NumTablets ${data[index].name} btn Pressed!");
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (ctx) =>
+                                                    const AddForm()));
                                       },
                                       child: Text(
-                                        "${data[index].dosagePT}",
+                                        "${alarms[index].dosagePT}",
                                         textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 25),
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none),
                                       ),
                                     )),
                               //doasge per time [tablet(s)]
@@ -444,14 +471,14 @@ class _HomeState extends State<Home> {
                                     top: 100,
                                     right: 13,
                                     child: GestureDetector(
-                                      onTap: () {
-                                        print(
-                                            "Tablets ${data[index].name} btn Pressed!");
-                                      },
+                                      onTap: () {},
                                       child: Text(
                                         "tablet(s)",
                                         textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 10),
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none),
                                       ),
                                     )),
                               if (isExpanded[index])
@@ -462,7 +489,11 @@ class _HomeState extends State<Home> {
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      print("INFO clicked!!!!!!!!!!!!!!!!");
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (ctx) =>
+                                                  const AddForm()));
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -501,7 +532,7 @@ class _HomeState extends State<Home> {
                                                 color: Colors.white),
                                           ),
                                           Text(
-                                            "     ${data[index].info}",
+                                            "     ${alarms[index].info}",
                                             textAlign: TextAlign.start,
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 4,
@@ -668,7 +699,8 @@ class _HomeState extends State<Home> {
                                           textAlign: TextAlign.start,
                                           style: TextStyle(
                                               fontSize: 20,
-                                              color: Colors.white),
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none),
                                         ),
                                         SizedBox(
                                           width: 152,

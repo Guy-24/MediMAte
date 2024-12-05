@@ -15,31 +15,30 @@ class _AddFormState extends State<AddForm> {
   int _dosagePT = 1;
   int _dosageL = 1;
   String _info = "";
-
   int _slot = 1;
-  int _alarmTotal = 1;
-  TimeOfDay _alarmTime = TimeOfDay(hour: 0, minute: 0);
+  int _hour = 0;
+  int _min = 0;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
-        primarySwatch: Colors.blue, // สีหลักของแอป
+        primarySwatch: Colors.blue,
         inputDecorationTheme: const InputDecorationTheme(
           enabledBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: Colors.black), // สีปกติ
+            borderSide: BorderSide(color: Colors.black), 
           ),
           focusedBorder: UnderlineInputBorder(
             borderSide: BorderSide(
-                color: Color(0xFF393939), width: 2.0), // สีเมื่อโฟกัส
+                color: Color(0xFF393939), width: 2.0), 
           ),
-          labelStyle: TextStyle(color: Colors.black), // สีของ label
+          labelStyle: TextStyle(color: Colors.black), 
           floatingLabelStyle:
-              TextStyle(color: Color(0xFF191c23)), // สี label เมื่อโฟกัส
+              TextStyle(color: Color(0xFF191c23)), 
         ),
         textTheme: const TextTheme(
           bodyMedium:
-              TextStyle(fontSize: 18, color: Colors.black), // ข้อความทั่วไป
+              TextStyle(fontSize: 18, color: Colors.black), 
         ),
       ),
       title: "Title",
@@ -49,7 +48,6 @@ class _AddFormState extends State<AddForm> {
             alignment: Alignment.centerLeft,
             child: Text("Edit details"),
           ),
-          // backgroundColor: Colors.blue,
         ),
         body: Padding(
             padding: const EdgeInsets.all(15),
@@ -145,33 +143,51 @@ class _AddFormState extends State<AddForm> {
                       },
                     ),
                     const SizedBox(
-                      height: 20,
+                      height: 40,
                     ),
                     // ปุ่ม submit-------------------------------
                     FilledButton(
                         onPressed: () {
                           _formKey.currentState!.validate();
-                          //นำ state ที่อยู่ในฟอร์มมาตรวจสอบผ่านตัว _formKey ผ่านตัว state
                           _formKey.currentState!.save(); //save
-                          data.add(
+                          alarms.add(
                             Alarm(
                               name: _name,
                               dosagePT: _dosagePT,
                               dosageL: _dosageL,
                               info: _info,
                               slot: _slot,
-                              alarmTime: _alarmTime,
+                              hour:_hour,
+                              min:_min,
                             ),
                           ); //สร้าง object Person และผูก state กับ propoties
                           Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                  builder: (ctx) => const Home()));
+                                  builder: (context) => const Home()));
                           _formKey.currentState!.reset(); //บันทึกแล้วเคลียร์
                         },
                         style: FilledButton.styleFrom(
                             backgroundColor: Color(0xFF393939)),
                         child: const Text("Submit",
+                            style: TextStyle(
+                              fontSize: 20,
+                            ))),
+                    const SizedBox(
+                      height: 40,
+                    ),
+                    // ปุ่ม cancel-------------------------------
+                    FilledButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const Home()));
+                          _formKey.currentState!.reset();
+                        },
+                        style: FilledButton.styleFrom(
+                            backgroundColor: Color(0xFF393939)),
+                        child: const Text("Cancel",
                             style: TextStyle(
                               fontSize: 20,
                             )))
