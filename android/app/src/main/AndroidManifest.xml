@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<<<<<<< HEAD
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -9,6 +10,8 @@
         android:maxSdkVersion="34" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
+=======
+>>>>>>> parent of 2c44720 (save)
     <application
         android:label="medimate"
         android:name="${applicationName}"
