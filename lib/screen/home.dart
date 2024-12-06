@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:medimate/main.dart';
@@ -7,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:permission_handler/permission_handler.dart';
@@ -86,33 +86,39 @@ class _HomeState extends State<Home> {
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
-  // Function to schedule an alarm
   Future<void> scheduleAlarm(int index) async {
-    // Initialize timezone
     tz.initializeTimeZones();
     final localTimeZone = tz.getLocation('Asia/Bangkok');
 
-    // Create the scheduled time based on the user's input for alarm time
-    final scheduledTime = tz.TZDateTime.now(localTimeZone).add(Duration(
-      hours: alarms[index].hour,
-      minutes: alarms[index].min,
-    ));
+    final now = tz.TZDateTime.now(localTimeZone);
 
-    print(
-        'Alarm scheduled for: $scheduledTime ----------------------------------------------------------------');
+    var scheduledTime = tz.TZDateTime(
+      localTimeZone,
+      now.year,
+      now.month,
+      now.day,
+      alarms[index].hour,
+      alarms[index].min,
+    );
+
+    if (scheduledTime.isBefore(now)) {
+      scheduledTime = scheduledTime.add(const Duration(days: 1));
+    }
+    print('Alarm scheduled for: $scheduledTime');
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       index, // Unique ID for the alarm
       'Alarm', // Notification title
       'Your alarm for ${alarms[index].name} is ringing!', // Notification body
       scheduledTime, // When to show the notification
-      const NotificationDetails(
+      NotificationDetails(
         android: AndroidNotificationDetails(
           'alarm_channel', // Channel ID
           'Alarm Notifications', // Channel name
           channelDescription: 'Channel for Alarm notifications',
           importance: Importance.max,
           priority: Priority.high,
+          playSound: false,
         ),
       ),
       uiLocalNotificationDateInterpretation:
@@ -414,11 +420,11 @@ class _HomeState extends State<Home> {
                                                               pickedTime.minute;
                                                         },
                                                       );
-                                                      // Schedule the alarm after setting the time
-                                                      await scheduleAlarm(
-                                                          index);
+
                                                       Navigator.of(context)
                                                           .pop();
+                                                      await scheduleAlarm(
+                                                          index);
                                                       _updateAlarm(index);
                                                     }
                                                   },
