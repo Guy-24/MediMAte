@@ -60,59 +60,16 @@ class _HomeState extends State<Home> {
     print("init called!!!");
   }
 
-<<<<<<< HEAD
-  // Function to request notification permission
-  Future<void> requestNotificationPermission() async {
-    PermissionStatus status = await Permission.notification.request();
-
-    if (status.isGranted) {
-      print("Notification permission granted");
-    } else {
-      print("Notification permission denied");
-    }
-  }
-
-  // Initialize notifications plugin
-  Future<void> initializeNotifications() async {
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    final InitializationSettings initializationSettings =
-        InitializationSettings(android: initializationSettingsAndroid);
-
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  }
-
-=======
->>>>>>> parent of 2c44720 (save)
   Future<void> scheduleAlarm(int index) async {
     tz.initializeTimeZones();
     final localTimeZone = tz.getLocation('Asia/Bangkok');
 
-<<<<<<< HEAD
-    final now = tz.TZDateTime.now(localTimeZone);
-
-    var scheduledTime = tz.TZDateTime(
-      localTimeZone,
-      now.year,
-      now.month,
-      now.day,
-      alarms[index].hour,
-      alarms[index].min,
-    );
-
-    if (scheduledTime.isBefore(now)) {
-      scheduledTime = scheduledTime.add(const Duration(days: 1));
-    }
-    print('Alarm scheduled for: $scheduledTime');
-=======
     final scheduledTime = tz.TZDateTime.now(localTimeZone).add(Duration(
       hours: alarms[index].hour,
       minutes: alarms[index].min,
     ));
     print(
         'Alarm scheduled for: $scheduledTime ----------------------------------------------------------');
->>>>>>> parent of 2c44720 (save)
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       index, // Unique ID for the alarm
