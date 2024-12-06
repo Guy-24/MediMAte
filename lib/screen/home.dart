@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:medimate/main.dart';
 import 'package:medimate/model/data.dart';
 import 'package:medimate/screen/form.dart';
@@ -71,25 +71,26 @@ class _HomeState extends State<Home> {
     print(
         'Alarm scheduled for: $scheduledTime ----------------------------------------------------------');
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      index, // Unique ID for the alarm
-      'Alarm', // Notification title
-      'Your alarm for ${alarms[index].name} is ringing!', // Notification body
-      scheduledTime, // When to show the notification
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'alarm_channel', // Channel ID
-          'Alarm Notifications', // Channel name
-          channelDescription: 'Channel for Alarm notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: false,
-        ),
-      ),
-      androidAllowWhileIdle: true,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    // await flutterLocalNotificationsPlugin.zonedSchedule(
+    //   index, // Unique ID for the alarm
+    //   'Alarm', // Notification title
+    //   'Your alarm for ${alarms[index].name} is ringing!', // Notification body
+    //   scheduledTime, // When to show the notification
+    //   NotificationDetails(
+    //     android: AndroidNotificationDetails(
+    //       'alarm_channel', // Channel ID
+    //       'Alarm Notifications', // Channel name
+    //       channelDescription: 'Channel for Alarm notifications',
+    //       importance: Importance.max,
+    //       priority: Priority.high,
+    //       playSound: false,
+    //     ),
+    //   ),
+    //   androidAllowWhileIdle: true,
+    //   uiLocalNotificationDateInterpretation:
+    //       UILocalNotificationDateInterpretation.absoluteTime,
+    //   matchDateTimeComponents: DateTimeComponents.time,
+    // );
   }
 
   Future<void> fetchData() async {
@@ -1042,9 +1043,10 @@ class _HomeState extends State<Home> {
       "hour": alarms[index].hour,
       "min": alarms[index].min,
     };
-
-    await updateAlarm(alarms[index].slot - 1, alarmData);
-    fetchData();
+    // print(index)
+    print(index); // Add missing semicolon
+    await updateAlarm(alarms[index].slot, alarmData); // Use alarms[index].slot directly
+    await fetchData();
   }
 
   void _resetAlarm(int index) async {

@@ -37,6 +37,7 @@ const AlarmSchema = new mongoose.Schema({
   dosagePT: { type: Number, required: false },
   dosageL: { type: Number, required: false },
   info: { type: String, required: false },
+  manual: { type: Boolean, require: true, default: false },
 });
 
 const Alarm = mongoose.model("Alarm", AlarmSchema);
@@ -150,7 +151,7 @@ app.put("/api/update_alarm/:slot", async (req, res) => {
 
     const updatedAlarm = await Alarm.findOneAndUpdate(
       { slot: req.params.slot },
-    //   console.log("Slot finding", req.params.slot),
+      //   console.log("Slot finding", req.params.slot),
       req.body,
       {
         new: true, // Return the updated document
