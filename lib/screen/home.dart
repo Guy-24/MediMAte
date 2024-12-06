@@ -9,8 +9,7 @@ import 'package:http/http.dart' as http;
 import 'dart:io';
 import 'dart:convert';
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 // import 'package:medimate/services/api.dart';
 class Home extends StatefulWidget {
@@ -46,24 +45,22 @@ Future<void> updateAlarm(int slot, Map<String, dynamic> alarmData) async {
 
 class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
-  // List<bool> isVibrate = [];
+  List<bool> isVibrate = [];
   List<File?> _images = [];
   final picker = ImagePicker();
   List<bool> _isUploadingList = [];
   List<String?> _messageList = [];
   List<Map<String, dynamic>?> _jsonResponseList = [];
 
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
   @override
   void initState() {
     super.initState();
-    requestNotificationPermission();
-    initializeNotifications();
+    // _initializeState();
     fetchData();
+    print("init called!!!");
   }
 
+<<<<<<< HEAD
   // Function to request notification permission
   Future<void> requestNotificationPermission() async {
     PermissionStatus status = await Permission.notification.request();
@@ -86,10 +83,13 @@ class _HomeState extends State<Home> {
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
+=======
+>>>>>>> parent of 2c44720 (save)
   Future<void> scheduleAlarm(int index) async {
     tz.initializeTimeZones();
     final localTimeZone = tz.getLocation('Asia/Bangkok');
 
+<<<<<<< HEAD
     final now = tz.TZDateTime.now(localTimeZone);
 
     var scheduledTime = tz.TZDateTime(
@@ -105,6 +105,14 @@ class _HomeState extends State<Home> {
       scheduledTime = scheduledTime.add(const Duration(days: 1));
     }
     print('Alarm scheduled for: $scheduledTime');
+=======
+    final scheduledTime = tz.TZDateTime.now(localTimeZone).add(Duration(
+      hours: alarms[index].hour,
+      minutes: alarms[index].min,
+    ));
+    print(
+        'Alarm scheduled for: $scheduledTime ----------------------------------------------------------');
+>>>>>>> parent of 2c44720 (save)
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       index, // Unique ID for the alarm
@@ -121,9 +129,9 @@ class _HomeState extends State<Home> {
           playSound: false,
         ),
       ),
+      androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
   }
 
@@ -135,7 +143,7 @@ class _HomeState extends State<Home> {
   void _initializeState() {
     setState(() {
       isExpanded = List<bool>.filled(alarms.length, false);
-      // isVibrate = List<bool>.filled(alarms.length, false);
+      isVibrate = List<bool>.filled(alarms.length, false);
       _images = List<File?>.filled(alarms.length, null);
       _isUploadingList = List<bool>.filled(alarms.length, false);
       _messageList = List<String?>.filled(alarms.length, null);
@@ -283,7 +291,7 @@ class _HomeState extends State<Home> {
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
-                      height: isExpanded[index] ? 600 : 220,
+                      height: isExpanded[index] ? 700 : 220,
                       //Card
                       child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -313,7 +321,7 @@ class _HomeState extends State<Home> {
                               AnimatedPositioned(
                                   duration: const Duration(milliseconds: 300),
                                   curve: Curves.easeInOut,
-                                  top: isExpanded[index] ? 500 : -12,
+                                  top: isExpanded[index] ? 600 : -12,
                                   right: 0,
                                   child: Image.network(
                                       isExpanded[index]
@@ -454,7 +462,7 @@ class _HomeState extends State<Home> {
                                                               Radius.circular(
                                                                   28.0)),
                                                     ),
-                                                    //Show Time inside
+                                                    //Show Time
                                                     child: Text(
                                                       formatTime(
                                                           alarms[index].hour,
@@ -866,80 +874,80 @@ class _HomeState extends State<Home> {
                               //     style: TextStyle(color: Colors.yellow),
                               //   ),
 
-                              // if (isExpanded[index])
-                              //   //Vibrate
-                              //   Positioned(
-                              //     top: 430,
-                              //     left: 5,
-                              //     //Card
-                              //     child: Container(
-                              //       height: 50,
-                              //       alignment: Alignment.topLeft,
-                              //       padding: EdgeInsets.symmetric(
-                              //           vertical: 10, horizontal: 15),
-                              //       decoration: BoxDecoration(
-                              //         color: Theme.of(context)
-                              //             .colorScheme
-                              //             .primary
-                              //             .withOpacity(0.8),
-                              //         borderRadius: BorderRadius.all(
-                              //             Radius.circular(10.0)),
-                              //       ),
-                              //       //img & text
-                              //       child: Row(
-                              //         crossAxisAlignment:
-                              //             CrossAxisAlignment.start,
-                              //         children: [
-                              //           Image.network(
-                              //               "https://cdn-icons-png.flaticon.com/128/4212/4212211.png",
-                              //               color: Colors.white),
-                              //           SizedBox(
-                              //             width: 10,
-                              //           ),
-                              //           Text(
-                              //             "Vibrate",
-                              //             textAlign: TextAlign.start,
-                              //             style: TextStyle(
-                              //                 fontSize: 20,
-                              //                 color: Colors.white,
-                              //                 decoration: TextDecoration.none),
-                              //           ),
-                              //           SizedBox(
-                              //             width: 130,
-                              //           ),
-                              //           //Vibrate btn
-                              //           GestureDetector(
-                              //               onTap: () {
-                              //                 setState(() {
-                              //                   isVibrate[index] =
-                              //                       !isVibrate[index];
-                              //                   print("Vibrate btn clicked!!!");
-                              //                 });
-                              //               },
-                              //               child: Container(
-                              //                 decoration: BoxDecoration(
-                              //                     color: Theme.of(context)
-                              //                         .colorScheme
-                              //                         .secondary,
-                              //                     borderRadius:
-                              //                         BorderRadius.circular(
-                              //                             28)),
-                              //                 child: Image.network(
-                              //                   isVibrate[index]
-                              //                       ? "https://cdn-icons-png.flaticon.com/128/3161/3161410.png"
-                              //                       : "https://cdn-icons-png.flaticon.com/128/446/446163.png",
-                              //                   color: Colors.white,
-                              //                 ),
-                              //               )),
-                              //         ],
-                              //       ),
-                              //     ),
-                              //   ),
+                              if (isExpanded[index])
+                                //Vibrate
+                                Positioned(
+                                  top: 430,
+                                  left: 5,
+                                  //Card
+                                  child: Container(
+                                    height: 50,
+                                    alignment: Alignment.topLeft,
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: 10, horizontal: 15),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary
+                                          .withOpacity(0.8),
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(10.0)),
+                                    ),
+                                    //img & text
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Image.network(
+                                            "https://cdn-icons-png.flaticon.com/128/4212/4212211.png",
+                                            color: Colors.white),
+                                        SizedBox(
+                                          width: 10,
+                                        ),
+                                        Text(
+                                          "Vibrate",
+                                          textAlign: TextAlign.start,
+                                          style: TextStyle(
+                                              fontSize: 20,
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none),
+                                        ),
+                                        SizedBox(
+                                          width: 130,
+                                        ),
+                                        //Vibrate btn
+                                        GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                isVibrate[index] =
+                                                    !isVibrate[index];
+                                                print("Vibrate btn clicked!!!");
+                                              });
+                                            },
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .secondary,
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          28)),
+                                              child: Image.network(
+                                                isVibrate[index]
+                                                    ? "https://cdn-icons-png.flaticon.com/128/3161/3161410.png"
+                                                    : "https://cdn-icons-png.flaticon.com/128/446/446163.png",
+                                                color: Colors.white,
+                                              ),
+                                            )),
+                                      ],
+                                    ),
+                                  ),
+                                ),
 
                               if (isExpanded[index])
                                 //Reset
                                 Positioned(
-                                  top: 480,
+                                  top: 580,
                                   left: 5,
                                   //btn
                                   child: ElevatedButton(
@@ -1017,9 +1025,9 @@ class _HomeState extends State<Home> {
                 final alarmData = {
                   "manual": true,
                 };
-                await updateAlarm(alarms[index].slot, alarmData);
+                await updateAlarm(alarms[index].slot - 1, alarmData);
                 print(
-                    "${alarms[index].slot}  manual=>true------------------------------");
+                    "${alarms[index].slot - 1}  manual=>true------------------------------");
                 fetchData();
                 Navigator.of(context).pop();
               },
@@ -1078,7 +1086,7 @@ class _HomeState extends State<Home> {
       "min": alarms[index].min,
     };
 
-    await updateAlarm(alarms[index].slot, alarmData);
+    await updateAlarm(alarms[index].slot - 1, alarmData);
     fetchData();
   }
 
