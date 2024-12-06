@@ -7,14 +7,22 @@ plugins {
 
 android {
     namespace = "com.example.medimate"
+    // minSdkVersion 21 // ตรวจสอบให้แน่ใจว่า minSdkVersion >= 21
+
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "26.1.10909125"
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
+
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
 
+    }
+    
+    dependencies   {
+        coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
+    }
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8
     }

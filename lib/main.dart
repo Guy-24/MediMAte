@@ -17,7 +17,7 @@ void main() async {
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
 
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  // await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   runApp(MyApp());
 }
 
