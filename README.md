@@ -262,7 +262,7 @@ Ensure the following libraries are installed in your Arduino IDE:
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/esp8266-alarm-servo-control.git
+   git clone https://github.com/Guy-24/Medimate.git
    ```
 
 2. **Open in Arduino IDE:**
