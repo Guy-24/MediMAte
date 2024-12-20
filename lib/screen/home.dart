@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:medimate/main.dart';
 import 'package:medimate/model/data.dart';
 import 'package:medimate/screen/form.dart';
@@ -11,7 +10,6 @@ import 'dart:convert';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 
-// import 'package:medimate/services/api.dart';
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -110,8 +108,20 @@ class _HomeState extends State<Home> {
     });
   }
 
+  //24-hour time
+  // String formatTime(int hour, int minute) {
+  //   return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
+  // }
+
+  // 12-hour time
   String formatTime(int hour, int minute) {
-    return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final formattedHour = hour == 0
+        ? 12
+        : hour > 12
+            ? hour - 12
+            : hour;
+    return "${formattedHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period";
   }
 
   Future<void> _pickImage(int index) async {
@@ -293,7 +303,7 @@ class _HomeState extends State<Home> {
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 top: isExpanded[index] ? 60 : 15,
-                                left: 20,
+                                left: -10,
                                 child: TextButton(
                                   onPressed: () {
                                     //pop up
@@ -307,7 +317,7 @@ class _HomeState extends State<Home> {
                                           elevation: 5.0,
                                           //Card set time
                                           child: Container(
-                                            width: 200,
+                                            width: 300,
                                             height: 150,
                                             decoration: BoxDecoration(
                                                 color: Theme.of(context)
@@ -428,10 +438,10 @@ class _HomeState extends State<Home> {
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
-                                                        fontSize: 40,
+                                                        fontSize: 30,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        letterSpacing: 7,
+                                                        letterSpacing: 5,
                                                         color: Theme.of(context)
                                                             .colorScheme
                                                             .onSecondary,
@@ -460,15 +470,15 @@ class _HomeState extends State<Home> {
                                   child: Container(
                                     color:
                                         Theme.of(context).colorScheme.primary,
-                                    width: 200,
+                                    width: 250,
                                     child: Text(
                                       formatTime(alarms[index].hour,
                                           alarms[index].min),
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        fontSize: 40,
+                                        fontSize: 32,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 5,
+                                        letterSpacing: 4,
                                         color: Colors.white,
                                       ),
                                     ),
@@ -1045,7 +1055,8 @@ class _HomeState extends State<Home> {
     };
     // print(index)
     print(index); // Add missing semicolon
-    await updateAlarm(alarms[index].slot, alarmData); // Use alarms[index].slot directly
+    await updateAlarm(
+        alarms[index].slot, alarmData); // Use alarms[index].slot directly
     await fetchData();
   }
 
