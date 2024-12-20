@@ -56,7 +56,7 @@ Before you begin, ensure you have met the following requirements:
    ```
 2. **Navigate to the Flutter Project Directory:**
    ```sh
-   cd Medimate/flutter_app
+   cd Medimate/
    ```
 3. **Install Dependencies:**
    ```sh
@@ -99,7 +99,7 @@ Before you begin, ensure you have met the following requirements:
 
 1. **Navigate to the Backend Project Directory:**
    ```sh
-   cd Medimate/express_backend
+   cd Medimate/
    ```
 2. **Install Dependencies:**
    ```sh
@@ -149,7 +149,7 @@ Before you begin, ensure you have met the following requirements:
 
 1. **Navigate to the FastAPI Project Directory:**
    ```sh
-   cd Medimate/fastapi_service
+   cd Medimate/
    ```
 2. **Install Dependencies:**
    ```sh
@@ -169,7 +169,7 @@ export OPENAI_API_KEY='your_openai_api_key'
 To run the application, use the following command:
 
 ```sh
-uvicorn main:app --reload
+python API.py
 ```
 
 #### API Endpoints
@@ -178,7 +178,7 @@ uvicorn main:app --reload
 
 #### Project Structure
 
-- `main.py`: The main entry point of the application.
+- `API.py`: The main entry point of the application.
 - `requirements.txt`: The dependencies required for the project.
 
 #### Usage
