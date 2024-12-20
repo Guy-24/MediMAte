@@ -1,9 +1,29 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:medimate/screen/form.dart';
+// import 'package:medimate/screen/form.dart';
 import 'package:medimate/screen/home.dart';
+import 'package:medimate/model/data.dart';
 
-void main() {
-  runApp(const MyApp());
+// final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeAlarms();
+  AwesomeNotifications().initialize(
+    null, // ไอคอนเริ่มต้น (null หมายถึงใช้ค่า default icon ของแอป)
+    [
+      NotificationChannel(
+        channelKey: 'basic_channel',
+        channelName: 'channelName',
+        channelDescription: 'channelDescription',
+        importance: NotificationImportance.Max, 
+        channelShowBadge: true, 
+        playSound: true,
+      ),
+    ],
+    debug: true,
+  );
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -14,7 +34,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Medimate',
       theme: ThemeData(
-        //ธีม
         colorScheme: const ColorScheme(
           brightness: Brightness.dark,
           primary: Color(0xFF191c23),
@@ -27,22 +46,18 @@ class MyApp extends StatelessWidget {
           onError: Colors.white,
           inversePrimary: Colors.blueGrey,
         ),
-
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF121318), 
+          backgroundColor: Color(0xFF121318),
         ),
-
         inputDecorationTheme: const InputDecorationTheme(
           enabledBorder: UnderlineInputBorder(
             borderSide: BorderSide(color: Color(0xFF191c23)),
           ),
           focusedBorder: UnderlineInputBorder(
-            borderSide:
-                BorderSide(color: Colors.black, width: 2.0),
+            borderSide: BorderSide(color: Colors.black, width: 2.0),
           ),
           labelStyle: TextStyle(color: Colors.black),
         ),
-
         useMaterial3: true,
       ),
       home: Scaffold(
@@ -51,7 +66,7 @@ class MyApp extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               "Alarm",
-              style: TextStyle(fontSize: 30),
+              style: TextStyle(fontSize: 30, color: Colors.white),
             ),
           ),
         ),

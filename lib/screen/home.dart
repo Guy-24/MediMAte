@@ -1,6 +1,15 @@
+import 'dart:typed_data';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:medimate/main.dart';
 import 'package:medimate/model/data.dart';
 import 'package:medimate/screen/form.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
+import 'dart:convert';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -9,21 +18,231 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
+Future<void> updateAlarm(int slot, Map<String, dynamic> alarmData) async {
+  final url = Uri.parse(
+      "http://10.0.2.2:2000/api/update_alarm/$slot"); // ใส่ URL ที่ถูกต้อง
+  try {
+    final response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json", // ระบุว่าใช้ JSON
+      },
+      body: jsonEncode(alarmData), // แปลงข้อมูลให้เป็น JSON
+    );
+
+    if (response.statusCode == 200) {
+      print("Alarm updated successfully");
+      print(jsonDecode(response.body)); // ดูข้อมูลที่ได้จาก API
+    } else {
+      print("Failed to update alarm: ${response.statusCode}");
+      print(response.body);
+    }
+  } catch (error) {
+    print("Error: $error");
+  }
+}
+
 class _HomeState extends State<Home> {
   List<bool> isExpanded = [];
   List<bool> isVibrate = [];
+  List<File?> _images = [];
+  final picker = ImagePicker();
+  List<bool> _isUploadingList = [];
+  List<String?> _messageList = [];
+  List<Map<String, dynamic>?> _jsonResponseList = [];
 
   @override
   void initState() {
+    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
+    fetchData();
     super.initState();
-    isExpanded = List<bool>.filled(data.length, false);
-    isVibrate = List<bool>.filled(data.length, false);
+  }
+
+  Future<void> scheduleAlarm(int index) async {
+    tz.initializeTimeZones();
+    final localTimeZone = tz.getLocation('Asia/Bangkok');
+
+    final scheduledTime = tz.TZDateTime.now(localTimeZone).add(Duration(
+      hours: alarms[index].hour,
+      minutes: alarms[index].min,
+    ));
+    print(
+        'Alarm scheduled for: $scheduledTime ----------------------------------------------------------');
+
+    // await flutterLocalNotificationsPlugin.zonedSchedule(
+    //   index, // Unique ID for the alarm
+    //   'Alarm', // Notification title
+    //   'Your alarm for ${alarms[index].name} is ringing!', // Notification body
+    //   scheduledTime, // When to show the notification
+    //   NotificationDetails(
+    //     android: AndroidNotificationDetails(
+    //       'alarm_channel', // Channel ID
+    //       'Alarm Notifications', // Channel name
+    //       channelDescription: 'Channel for Alarm notifications',
+    //       importance: Importance.max,
+    //       priority: Priority.high,
+    //       playSound: false,
+    //     ),
+    //   ),
+    //   androidAllowWhileIdle: true,
+    //   uiLocalNotificationDateInterpretation:
+    //       UILocalNotificationDateInterpretation.absoluteTime,
+    //   matchDateTimeComponents: DateTimeComponents.time,
+    // );
+  }
+
+  Future<void> fetchData() async {
+    await initializeAlarms(); // โหลดข้อมูลจาก API
+    _initializeState(); // อัปเดตสถานะของ Widget
+  }
+
+  void _initializeState() {
+    setState(() {
+      isExpanded = List<bool>.filled(alarms.length, false);
+      isVibrate = List<bool>.filled(alarms.length, false);
+      _images = List<File?>.filled(alarms.length, null);
+      _isUploadingList = List<bool>.filled(alarms.length, false);
+      _messageList = List<String?>.filled(alarms.length, null);
+      _jsonResponseList =
+          List<Map<String, dynamic>?>.filled(alarms.length, null);
+    });
+  }
+
+  //24-hour time
+  // String formatTime(int hour, int minute) {
+  //   return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
+  // }
+
+  // 12-hour time
+  String formatTime(int hour, int minute) {
+    final period = hour >= 12 ? 'PM' : 'AM';
+    final formattedHour = hour == 0
+        ? 12
+        : hour > 12
+            ? hour - 12
+            : hour;
+    return "${formattedHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period";
+  }
+
+  Future<void> _pickImage(int index) async {
+    try {
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 600,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _images[index] = File(pickedFile.path);
+          _messageList[index] = null;
+        });
+      } else {
+        setState(() {
+          _messageList[index] = 'No image selected.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messageList[index] = 'Error selecting image: $e';
+      });
+    }
+  }
+
+  Future<void> _uploadImage(int index) async {
+    if (_images[index] == null) return;
+    setState(() {
+      _isUploadingList[index] = true;
+      _messageList[index] = null;
+    });
+
+    const String uploadUrl = 'http://10.0.2.2:8000/process-image/';
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(uploadUrl))
+        ..files.add(
+          await http.MultipartFile.fromPath(
+            'file',
+            _images[index]!.path,
+          ),
+        );
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseData = await response.stream.bytesToString();
+        setState(() {
+          _messageList[index] = 'Upload successful';
+          _jsonResponseList[index] = jsonDecode(responseData);
+
+          // Map the API response to the Alarm object
+          Map<String, dynamic>? apiData = _jsonResponseList[index];
+
+          if (apiData != null) {
+            // Update name
+            alarms[index].name = apiData['pill_name'] ?? alarms[index].name;
+
+            // Update dosagePT
+            alarms[index].dosagePT =
+                int.tryParse(apiData['amount'].toString()) ??
+                    alarms[index].dosagePT;
+
+            // Concatenate datae, time_condition, and warning into info
+            alarms[index].info =
+                '${apiData['datae'] ?? ''}, ${apiData['time_condition'] ?? ''}, ${apiData['warning'] ?? ''}';
+
+            // Update alarmTime
+            if (apiData['time'] != -1) {
+              int hour = int.tryParse(apiData['time'].toString()) ??
+                  alarms[index].hour;
+              int min =
+                  int.tryParse(apiData['time'].toString()) ?? alarms[index].min;
+              // alarms[index] = TimeOfDay(hour: hour, minute: 0);
+
+              alarms[index].hour = hour;
+              alarms[index].min = min;
+            }
+            _messageList[index] = 'Invalid response data from API';
+          }
+        });
+        final alarmData = {
+          "name": alarms[index].name,
+          "dosagePT": alarms[index].dosagePT,
+          "info": alarms[index].info,
+          "hour": alarms[index].hour,
+          "min": alarms[index].min,
+        };
+
+        await updateAlarm(alarms[index].slot, alarmData);
+        fetchData();
+
+        // print(_jsonResponseList[index]);
+        // print(index);
+      } else {
+        setState(() {
+          _messageList[index] =
+              'Upload failed with status: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _messageList[index] = 'An error occurred: $e';
+      });
+    } finally {
+      setState(() {
+        _isUploadingList[index] = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-        itemCount: data.length,
+        itemCount: alarms.length,
         itemBuilder: (context, index) {
           return Column(
             children: [
@@ -88,7 +307,7 @@ class _HomeState extends State<Home> {
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
                                 top: isExpanded[index] ? 60 : 15,
-                                left: 20,
+                                left: -10,
                                 child: TextButton(
                                   onPressed: () {
                                     //pop up
@@ -102,8 +321,8 @@ class _HomeState extends State<Home> {
                                           elevation: 5.0,
                                           //Card set time
                                           child: Container(
-                                            width: 200,
-                                            height: 300,
+                                            width: 300,
+                                            height: 150,
                                             decoration: BoxDecoration(
                                                 color: Theme.of(context)
                                                     .colorScheme
@@ -122,7 +341,7 @@ class _HomeState extends State<Home> {
                                             child: Stack(children: [
                                               //Select time
                                               const Positioned(
-                                                top: 30,
+                                                top: 15,
                                                 left: 30,
                                                 width: 110,
                                                 height: 45,
@@ -136,7 +355,7 @@ class _HomeState extends State<Home> {
                                               ),
                                               //Time Picker
                                               Positioned(
-                                                top: 80,
+                                                top: 56,
                                                 left: 40,
                                                 width: 200,
                                                 height: 70,
@@ -146,17 +365,47 @@ class _HomeState extends State<Home> {
                                                     TimeOfDay? pickedTime =
                                                         await showTimePicker(
                                                       context: context,
-                                                      initialTime:
-                                                          data[index].alarmTime,
+                                                      initialTime: TimeOfDay(
+                                                          hour: alarms[index]
+                                                              .hour,
+                                                          minute: alarms[index]
+                                                              .min),
+                                                      builder:
+                                                          (BuildContext context,
+                                                              Widget? child) {
+                                                        return Theme(
+                                                          data:
+                                                              Theme.of(context)
+                                                                  .copyWith(
+                                                            textButtonTheme:
+                                                                TextButtonThemeData(
+                                                              style: TextButton
+                                                                  .styleFrom(
+                                                                foregroundColor:
+                                                                    Colors
+                                                                        .white, // Change Cancel/OK text color
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          child: child!,
+                                                        );
+                                                      },
                                                     );
                                                     if (pickedTime != null) {
-                                                      setState(() {
-                                                        // อัปเดตเวลาที่เลือกกลับไปยัง data[index].alarmTime
-                                                        data[index].alarmTime =
-                                                            pickedTime;
-                                                      });
-                                                      print(
-                                                          "Selected time: ${pickedTime.format(context)}");
+                                                      setState(
+                                                        () {
+                                                          alarms[index].hour =
+                                                              pickedTime.hour;
+                                                          alarms[index].min =
+                                                              pickedTime.minute;
+                                                        },
+                                                      );
+
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      await scheduleAlarm(
+                                                          index);
+                                                      _updateAlarm(index);
                                                     }
                                                   },
                                                   style:
@@ -187,16 +436,16 @@ class _HomeState extends State<Home> {
                                                     ),
                                                     //Show Time
                                                     child: Text(
-                                                      data[index]
-                                                          .alarmTime
-                                                          .format(context),
+                                                      formatTime(
+                                                          alarms[index].hour,
+                                                          alarms[index].min),
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
                                                         fontSize: 30,
                                                         fontWeight:
                                                             FontWeight.w700,
-                                                        letterSpacing: 3,
+                                                        letterSpacing: 5,
                                                         color: Theme.of(context)
                                                             .colorScheme
                                                             .onSecondary,
@@ -225,14 +474,15 @@ class _HomeState extends State<Home> {
                                   child: Container(
                                     color:
                                         Theme.of(context).colorScheme.primary,
-                                    width: 200,
+                                    width: 250,
                                     child: Text(
-                                      data[index].alarmTime.format(context),
+                                      formatTime(alarms[index].hour,
+                                          alarms[index].min),
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        fontSize: 33,
+                                        fontSize: 32,
                                         fontWeight: FontWeight.w700,
-                                        letterSpacing: 5,
+                                        letterSpacing: 4,
                                         color: Colors.white,
                                       ),
                                     ),
@@ -249,20 +499,24 @@ class _HomeState extends State<Home> {
                                     ? GestureDetector(
                                         onTap: () {
                                           print(
-                                              "slot ${data[index].slot} btn Pressed!");
+                                              "slot ${alarms[index].slot} btn Pressed!");
                                         },
                                         child: Text(
-                                          "slot ${data[index].slot}",
+                                          "slot ${alarms[index].slot}",
                                           textAlign: TextAlign.right,
                                           style: TextStyle(
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none,
                                               fontSize:
-                                                  isExpanded[index] ? 25 : 20),
+                                                  isExpanded[index] ? 22 : 20),
                                         ),
                                       )
                                     : Text(
-                                        "slot ${data[index].slot}",
+                                        "slot ${alarms[index].slot}",
                                         textAlign: TextAlign.right,
                                         style: TextStyle(
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none,
                                             fontSize:
                                                 isExpanded[index] ? 25 : 20),
                                       ),
@@ -276,22 +530,48 @@ class _HomeState extends State<Home> {
                                 child: isExpanded[index]
                                     ? GestureDetector(
                                         onTap: () {
+                                          String name = alarms[index].name;
+                                          int dosagePT = alarms[index].dosagePT;
+                                          int dosageL = alarms[index].dosageL;
+                                          String info = alarms[index].info;
+                                          int slot = alarms[index].slot;
+                                          int hour = alarms[index].hour;
+                                          int min = alarms[index].min;
                                           Navigator.push(
                                               context,
                                               MaterialPageRoute(
-                                                  builder: (ctx) =>
-                                                      const AddForm()));
+                                                  builder: (ctx) => AddForm(
+                                                      slot: slot,
+                                                      name: name,
+                                                      info: info,
+                                                      dosagePT: dosagePT,
+                                                      dosageL: dosageL,
+                                                      hour: hour,
+                                                      min: min)));
                                         },
                                         child: Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                data[index].name,
-                                                textAlign: TextAlign.left,
-                                                style: const TextStyle(
-                                                  fontSize: 25,
-                                                  fontWeight: FontWeight.bold,
+                                              Container(
+                                                constraints:
+                                                    const BoxConstraints(
+                                                        maxWidth: 150,
+                                                        maxHeight: 50),
+                                                child: Text(
+                                                  alarms[index].name,
+                                                  textAlign: TextAlign.left,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  softWrap: false,
+                                                  maxLines: 1,
+                                                  style: const TextStyle(
+                                                      fontSize: 25,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      decoration:
+                                                          TextDecoration.none,
+                                                      color: Colors.white),
                                                 ),
                                               ),
                                               SizedBox(
@@ -304,10 +584,20 @@ class _HomeState extends State<Home> {
                                                 height: 15,
                                               ),
                                             ]))
-                                    : Text(
-                                        data[index].name,
-                                        textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 25),
+                                    : Container(
+                                        constraints: const BoxConstraints(
+                                            maxWidth: 300, maxHeight: 50),
+                                        child: Text(
+                                          alarms[index].name,
+                                          overflow: TextOverflow.ellipsis,
+                                          softWrap: false,
+                                          maxLines: 1,
+                                          textAlign: TextAlign.left,
+                                          style: TextStyle(
+                                              fontSize: 25,
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none),
+                                        ),
                                       ),
                               ),
                               //doasge per time
@@ -317,13 +607,32 @@ class _HomeState extends State<Home> {
                                     right: 25,
                                     child: GestureDetector(
                                       onTap: () {
-                                        print(
-                                            "NumTablets ${data[index].name} btn Pressed!");
+                                        String name = alarms[index].name;
+                                        int dosagePT = alarms[index].dosagePT;
+                                        int dosageL = alarms[index].dosageL;
+                                        String info = alarms[index].info;
+                                        int slot = alarms[index].slot;
+                                        int hour = alarms[index].hour;
+                                        int min = alarms[index].min;
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (ctx) => AddForm(
+                                                    slot: slot,
+                                                    name: name,
+                                                    info: info,
+                                                    dosagePT: dosagePT,
+                                                    dosageL: dosageL,
+                                                    hour: hour,
+                                                    min: min)));
                                       },
                                       child: Text(
-                                        "${data[index].dosagePT}",
+                                        "${alarms[index].dosagePT}",
                                         textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 25),
+                                        style: TextStyle(
+                                            fontSize: 25,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none),
                                       ),
                                     )),
                               //doasge per time [tablet(s)]
@@ -332,14 +641,14 @@ class _HomeState extends State<Home> {
                                     top: 100,
                                     right: 13,
                                     child: GestureDetector(
-                                      onTap: () {
-                                        print(
-                                            "Tablets ${data[index].name} btn Pressed!");
-                                      },
+                                      onTap: () {},
                                       child: Text(
                                         "tablet(s)",
                                         textAlign: TextAlign.left,
-                                        style: TextStyle(fontSize: 10),
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.white,
+                                            decoration: TextDecoration.none),
                                       ),
                                     )),
                               if (isExpanded[index])
@@ -350,7 +659,24 @@ class _HomeState extends State<Home> {
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      print("INFO clicked!!!!!!!!!!!!!!!!");
+                                      String name = alarms[index].name;
+                                      int dosagePT = alarms[index].dosagePT;
+                                      int dosageL = alarms[index].dosageL;
+                                      String info = alarms[index].info;
+                                      int slot = alarms[index].slot;
+                                      int hour = alarms[index].hour;
+                                      int min = alarms[index].min;
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (ctx) => AddForm(
+                                                  slot: slot,
+                                                  name: name,
+                                                  info: info,
+                                                  dosagePT: dosagePT,
+                                                  dosageL: dosageL,
+                                                  hour: hour,
+                                                  min: min)));
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -380,7 +706,7 @@ class _HomeState extends State<Home> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            "Infomation",
+                                            "Info",
                                             textAlign: TextAlign.start,
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 4,
@@ -389,7 +715,7 @@ class _HomeState extends State<Home> {
                                                 color: Colors.white),
                                           ),
                                           Text(
-                                            "     ${data[index].info}",
+                                            "     ${alarms[index].info}",
                                             textAlign: TextAlign.start,
                                             overflow: TextOverflow.ellipsis,
                                             maxLines: 4,
@@ -409,9 +735,8 @@ class _HomeState extends State<Home> {
                                   left: 5,
                                   //btn
                                   child: ElevatedButton(
-                                    onPressed: () {
-                                      print(
-                                          "Manual receive clicked!!!!!!!!!!!!!!!!");
+                                    onPressed: () async {
+                                      _confirmManual(alarms[index].slot);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -458,16 +783,16 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
                               if (isExpanded[index])
-                                //Take picture
+                                // Take picture
                                 Positioned(
                                   top: 360,
                                   left: 5,
-                                  //btn
                                   child: ElevatedButton(
-                                    onPressed: () {
-                                      print(
-                                          "Take picture clicked!!!!!!!!!!!!!!!!");
+                                    onPressed: () async {
+                                      await _pickImage(index);
+                                      await _uploadImage(index);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -476,7 +801,6 @@ class _HomeState extends State<Home> {
                                       ),
                                       padding: EdgeInsets.zero,
                                     ),
-                                    //Card
                                     child: Container(
                                       constraints: const BoxConstraints(
                                           maxWidth: 182, maxHeight: 50),
@@ -491,19 +815,17 @@ class _HomeState extends State<Home> {
                                         borderRadius: const BorderRadius.all(
                                             Radius.circular(10.0)),
                                       ),
-                                      //Take picture img & text
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Image.network(
-                                              "https://cdn-icons-png.flaticon.com/128/711/711191.png",
-                                              color: Colors.white),
-                                          SizedBox(
-                                            width: 10,
+                                            "https://cdn-icons-png.flaticon.com/128/711/711191.png",
+                                            color: Colors.white,
                                           ),
+                                          SizedBox(width: 10),
                                           Text(
-                                            "Take picture",
+                                            "Gallary",
                                             textAlign: TextAlign.start,
                                             style: TextStyle(
                                                 fontSize: 20,
@@ -514,6 +836,16 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
+                              // // Optionally display messages or loading indicators
+                              // if (_isUploadingList[index])
+                              //   CircularProgressIndicator(),
+                              // if (_messageList[index] != null)
+                              //   Text(
+                              //     _messageList[index]!,
+                              //     style: TextStyle(color: Colors.yellow),
+                              //   ),
+
                               if (isExpanded[index])
                                 //Vibrate
                                 Positioned(
@@ -549,10 +881,11 @@ class _HomeState extends State<Home> {
                                           textAlign: TextAlign.start,
                                           style: TextStyle(
                                               fontSize: 20,
-                                              color: Colors.white),
+                                              color: Colors.white,
+                                              decoration: TextDecoration.none),
                                         ),
                                         SizedBox(
-                                          width: 152,
+                                          width: 130,
                                         ),
                                         //Vibrate btn
                                         GestureDetector(
@@ -582,16 +915,16 @@ class _HomeState extends State<Home> {
                                     ),
                                   ),
                                 ),
+
                               if (isExpanded[index])
-                                //Delete
+                                //Reset
                                 Positioned(
                                   top: 580,
                                   left: 5,
                                   //btn
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      print(
-                                          "Reset btn clicked!!!!!!!!!!!!!!!!");
+                                      _confirmResetAlarm(alarms[index].slot);
                                     },
                                     style: ElevatedButton.styleFrom(
                                       shape: RoundedRectangleBorder(
@@ -645,5 +978,125 @@ class _HomeState extends State<Home> {
             ],
           );
         });
+  }
+
+  void _confirmManual(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Manual'),
+          content: Text('Are you sure you want to take pill(s) now?'),
+          actions: [
+            TextButton(
+              child: Text(
+                'Confirm',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () async {
+                final alarmData = {
+                  "manual": true,
+                };
+                await updateAlarm(alarms[index].slot - 1, alarmData);
+                print(
+                    "${alarms[index].slot - 1}  manual=>true------------------------------");
+                fetchData();
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmResetAlarm(int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Reset'),
+          content: Text('Are you sure you want to reset this alarm?'),
+          actions: [
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text(
+                'Reset',
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () async {
+                _resetAlarm(alarms[index].slot);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _updateAlarm(int index) async {
+    final alarmData = {
+      "hour": alarms[index].hour,
+      "min": alarms[index].min,
+    };
+    // print(index)
+    print(index);
+    await updateAlarm(
+        alarms[index].slot, alarmData); // Use alarms[index].slot directly
+    await fetchData();
+
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 1, // ต้องมี id ไม่ซ้ำ
+        channelKey: 'basic_channel', // ช่องการแจ้งเตือน
+        title: 'ถึงเวลาทานยาของท่านแล้ว',
+        body: '${alarms[index].name} ที่ slot${alarms[index].slot}',
+        notificationLayout: NotificationLayout.Default,
+      ),
+      schedule: NotificationCalendar(
+        year: 2024, // ปี
+        month: 12, // เดือน
+        day: 20, // วันที่
+        hour: alarms[index].hour, // ชั่วโมง
+        minute: alarms[index].min, // นาที
+        second: 0, // วินาที
+        allowWhileIdle: true, // ให้แจ้งเตือนขณะ idle
+      ),
+    );
+    print(
+        "Time setted at ${alarms[index].slot}  ${alarms[index].hour}:${alarms[index].min}-------------------------------------------"); // Add missing semicolon
+  }
+
+  void _resetAlarm(int index) async {
+    final alarmData = {
+      "name": "-",
+      "dosagePT": 0,
+      "dosageL": 0,
+      "info": "-",
+      "hour": 0,
+      "min": 0,
+    };
+
+    print("${index - 1} resetAlarm------------------------------");
+    await updateAlarm(index - 1, alarmData);
+    fetchData();
   }
 }
