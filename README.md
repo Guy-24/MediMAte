@@ -234,10 +234,6 @@ Ensure the following libraries are installed in your Arduino IDE:
 - [NTPClient](https://github.com/arduino-libraries/NTPClient) by Fabrice Weinberg
 - [WiFiUdp](https://github.com/esp8266/Arduino/tree/master/libraries/WiFiUdp) (included with ESP8266 board package)
 
-#### Wiring Diagram
-
-![Wiring Diagram](https://via.placeholder.com/600x400)
-
 **Connections:**
 
 - **PCF8574 I/O Expander:**
