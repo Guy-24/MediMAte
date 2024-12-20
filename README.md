@@ -1,8 +1,6 @@
-Certainly! Below is the **combined README** that integrates the three components of the **Medimate** project (Flutter Application, Express.js Backend, FastAPI Image Processing) along with the **ESP8266 Alarm and Servo Control System**. This comprehensive README provides an overview of all components, their features, installation instructions, and other essential details.
 
----
 
-# Medimate Suite
+# Medimate
 
 Medimate Suite is a comprehensive collection of applications and systems designed to assist users in managing their medical appointments, reminders, health records, and more. The suite includes a Flutter mobile application, an Express.js backend for alarm management, a FastAPI service for processing medication instruction images using OpenAI's API, and an ESP8266-based Alarm and Servo Control System for IoT-based alarm management.
 
