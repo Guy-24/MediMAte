@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:medimate/main.dart';
 import 'package:medimate/model/data.dart';
@@ -52,10 +53,13 @@ class _HomeState extends State<Home> {
 
   @override
   void initState() {
-    super.initState();
-    // _initializeState();
+    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
     fetchData();
-    print("init called!!!");
+    super.initState();
   }
 
   Future<void> scheduleAlarm(int index) async {
@@ -1054,10 +1058,31 @@ class _HomeState extends State<Home> {
       "min": alarms[index].min,
     };
     // print(index)
-    print(index); // Add missing semicolon
+    print(index);
     await updateAlarm(
         alarms[index].slot, alarmData); // Use alarms[index].slot directly
     await fetchData();
+
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 1, // ต้องมี id ไม่ซ้ำ
+        channelKey: 'basic_channel', // ช่องการแจ้งเตือน
+        title: 'ถึงเวลาทานยาของท่านแล้ว',
+        body: '${alarms[index].name} ที่ slot${alarms[index].slot}',
+        notificationLayout: NotificationLayout.Default,
+      ),
+      schedule: NotificationCalendar(
+        year: 2024, // ปี
+        month: 12, // เดือน
+        day: 20, // วันที่
+        hour: alarms[index].hour, // ชั่วโมง
+        minute: alarms[index].min, // นาที
+        second: 0, // วินาที
+        allowWhileIdle: true, // ให้แจ้งเตือนขณะ idle
+      ),
+    );
+    print(
+        "Time setted at ${alarms[index].slot}  ${alarms[index].hour}:${alarms[index].min}-------------------------------------------"); // Add missing semicolon
   }
 
   void _resetAlarm(int index) async {

@@ -1,3 +1,4 @@
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 // import 'package:medimate/screen/form.dart';
 import 'package:medimate/screen/home.dart';
@@ -8,7 +9,20 @@ import 'package:medimate/model/data.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeAlarms();
-
+  AwesomeNotifications().initialize(
+    null, // ไอคอนเริ่มต้น (null หมายถึงใช้ค่า default icon ของแอป)
+    [
+      NotificationChannel(
+        channelKey: 'basic_channel',
+        channelName: 'channelName',
+        channelDescription: 'channelDescription',
+        importance: NotificationImportance.Max, 
+        channelShowBadge: true, 
+        playSound: true,
+      ),
+    ],
+    debug: true,
+  );
   runApp(MyApp());
 }
 
